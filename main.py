@@ -1,9 +1,7 @@
 # main.py
-# automata_visualizer.py
-import graphviz
-# automata_parser.py
 from lark import Lark, Transformer
-import tkinter as tk
+
+# --- Parser ---
 grammar = """
 ?start: expr
 ?expr: expr "+" term   -> union
@@ -18,7 +16,6 @@ CHAR: /[a-z]/
 %ignore " "
 """
 
-
 class RegexTransformer(Transformer):
     def union(self, items): return ('union', items[0], items[1])
     def concat(self, items): return ('concat', items[0], items[1])
@@ -29,7 +26,6 @@ def parse_expression(regex):
     parser = Lark(grammar, start='start', parser='lalr', transformer=RegexTransformer())
     return parser.parse(regex)
 
-# automata_builder.py
 class State:
     count = 0
     def __init__(self):
@@ -63,73 +59,3 @@ def build_automata(tree):
         states = a['states'] + [s_start, s_end]
         return {'states':states, 'start':s_start, 'end':s_end, 'transitions':transitions}
 
-# automata_visualizer.py
-
-
-def visualize(automata):
-    dot = graphviz.Digraph()
-    for s in automata['states']:
-        shape = 'doublecircle' if s == automata['end'] else 'circle'
-        dot.node(str(s.id), shape=shape)
-    for s1, s2, label in automata['transitions']:
-        dot.edge(str(s1.id), str(s2.id), label)
-    dot.render('automata_output', view=True)
-
-
-
-
-def main():
-    print("\n--- Algoritmo de Kleene para Expresiones Regulares ---\n")
-    regex_input = input("Ingrese la expresión regular (ejemplo: (ab+ba)): ")
-    try:
-        parsed_expr = parse_expression(regex_input)
-        print(f"Expresión parseada exitosamente: {parsed_expr}")
-    except Exception as e:
-        print(f"Error al parsear la expresión regular: {e}")
-        return
-    try:
-        automata = build_automata(parsed_expr)
-        print("Autómata generado correctamente.")
-    except Exception as e:
-        print(f"Error al generar el autómata: {e}")
-        return
-    try:
-        visualize(automata)
-        print("Visualización generada correctamente.")
-    except Exception as e:
-        print(f"Error en la visualización: {e}")
-        print("\n👉 Solución sugerida: Asegúrate de tener Graphviz instalado y que el ejecutable 'dot' esté en tu PATH del sistema.")
-        print("Descarga Graphviz desde: https://graphviz.gitlab.io/download/")
-
-if __name__ == "__main__":
-    main()
-
-
-def run_algorithm():
-    regex_input = entry.get()
-    try:
-        parsed_expr = parse_expression(regex_input)
-        status_label.config(text="✔️ Expresión parseada exitosamente")
-        automata = build_automata(parsed_expr)
-        visualize(automata)
-        status_label.config(text="✔️ Visualización generada correctamente")
-    except Exception as e:
-        status_label.config(text=f"❌ Error: {e}")
-
-root = tk.Tk()
-root.title("Algoritmo de Kleene")
-root.geometry("400x200")
-
-label = tk.Label(root, text="Ingrese expresión regular:")
-label.pack(pady=10)
-
-entry = tk.Entry(root, width=30)
-entry.pack(pady=5)
-
-run_button = tk.Button(root, text="Generar Autómata", command=run_algorithm)
-run_button.pack(pady=10)
-
-status_label = tk.Label(root, text="")
-status_label.pack(pady=10)
-
-root.mainloop()
