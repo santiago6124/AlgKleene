@@ -1,9 +1,9 @@
 # main.py
+# automata_visualizer.py
 import graphviz
+# automata_parser.py
 from lark import Lark, Transformer
 import tkinter as tk
-
-# --- Parser ---
 grammar = """
 ?start: expr
 ?expr: expr "+" term   -> union
@@ -18,6 +18,7 @@ CHAR: /[a-z]/
 %ignore " "
 """
 
+
 class RegexTransformer(Transformer):
     def union(self, items): return ('union', items[0], items[1])
     def concat(self, items): return ('concat', items[0], items[1])
@@ -28,7 +29,7 @@ def parse_expression(regex):
     parser = Lark(grammar, start='start', parser='lalr', transformer=RegexTransformer())
     return parser.parse(regex)
 
-# --- Automata Builder ---
+# automata_builder.py
 class State:
     count = 0
     def __init__(self):
@@ -62,7 +63,9 @@ def build_automata(tree):
         states = a['states'] + [s_start, s_end]
         return {'states':states, 'start':s_start, 'end':s_end, 'transitions':transitions}
 
-# --- Automata Visualizer ---
+# automata_visualizer.py
+
+
 def visualize(automata):
     dot = graphviz.Digraph()
     for s in automata['states']:
@@ -72,28 +75,41 @@ def visualize(automata):
         dot.edge(str(s1.id), str(s2.id), label)
     dot.render('automata_output', view=True)
 
-# --- CLI Main ---
+
+
+
 def main():
     print("\n--- Algoritmo de Kleene para Expresiones Regulares ---\n")
     regex_input = input("Ingrese la expresión regular (ejemplo: (ab+ba)): ")
     try:
         parsed_expr = parse_expression(regex_input)
         print(f"Expresión parseada exitosamente: {parsed_expr}")
+    except Exception as e:
+        print(f"Error al parsear la expresión regular: {e}")
+        return
+    try:
         automata = build_automata(parsed_expr)
-        visualize(automata)
         print("Autómata generado correctamente.")
     except Exception as e:
-        print(f"Error: {e}")
-        print("\n👉 Asegúrate de tener Graphviz instalado y en PATH.")
+        print(f"Error al generar el autómata: {e}")
+        return
+    try:
+        visualize(automata)
+        print("Visualización generada correctamente.")
+    except Exception as e:
+        print(f"Error en la visualización: {e}")
+        print("\n👉 Solución sugerida: Asegúrate de tener Graphviz instalado y que el ejecutable 'dot' esté en tu PATH del sistema.")
+        print("Descarga Graphviz desde: https://graphviz.gitlab.io/download/")
 
 if __name__ == "__main__":
     main()
 
-# --- Tkinter GUI ---
+
 def run_algorithm():
     regex_input = entry.get()
     try:
         parsed_expr = parse_expression(regex_input)
+        status_label.config(text="✔️ Expresión parseada exitosamente")
         automata = build_automata(parsed_expr)
         visualize(automata)
         status_label.config(text="✔️ Visualización generada correctamente")
