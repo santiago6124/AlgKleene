@@ -26,7 +26,9 @@ class RegexTransformer(Transformer):
 
 # Función que parsea la expresión usando Lark y devuelve el árbol transformado
 def parse_expression(regex):
+    print("Parsing regex:", regex)
     parser = Lark(grammar, start='start', parser='lalr', transformer=RegexTransformer())
+    print(parser.parse(regex))
     return parser.parse(regex)
 
 # Clase que define cada estado del autómata, con un identificador único
@@ -40,17 +42,17 @@ class State:
 # Usa el algoritmo de Thompson
 
 def build_automata(tree):
+    typ = tree[0] # La estructura sera algo asi: ('union', subtree1, subtree2)
     if isinstance(tree, str):  # Caso base: símbolo simple
         s1, s2 = State(), State()
         return {'states':[s1,s2], 'start':s1, 'end':s2, 'transitions':[(s1,s2,tree)]}
-    typ = tree[0]
     if typ == 'union':  # Unión: crea estados nuevos y combina los autómatas
         a1 = build_automata(tree[1])
         a2 = build_automata(tree[2])
         s_start, s_end = State(), State()
+        states = a1['states'] + a2['states'] + [s_start, s_end]
         transitions = a1['transitions'] + a2['transitions']
         transitions += [(s_start,a1['start'],'λ'), (s_start,a2['start'],'λ'), (a1['end'],s_end,'λ'), (a2['end'],s_end,'λ')]
-        states = a1['states'] + a2['states'] + [s_start, s_end]
         return {'states':states, 'start':s_start, 'end':s_end, 'transitions':transitions}
     if typ == 'concat':  # Concatenación: conecta el final del primero con el inicio del segundo
         a1 = build_automata(tree[1])
