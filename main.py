@@ -1,7 +1,6 @@
 # main.py
 from lark import Lark, Transformer
 
-# Gramática para expresiones regulares
 grammar = """
 ?start: expr
 ?expr: expr "+" term   -> union
@@ -9,33 +8,37 @@ grammar = """
 ?term: term factor     -> concat
      | factor
 ?factor: base "*"       -> star
+       | base "!"       -> repeat3
        | base
 ?base: "(" expr ")"
      | CHAR
-CHAR: /[a-z]/
+CHAR: /[a-z]/ | "λ"
 %ignore " "
 """
 
-# Transformer para construir el árbol sintáctico
 class RegexTransformer(Transformer):
     def union(self, items): return ('union', items[0], items[1])
     def concat(self, items): return ('concat', items[0], items[1])
     def star(self, items): return ('star', items[0])
+    def repeat3(self, items): 
+        e1 = items[0]
+        return ('concat', e1, ('concat', e1, ('star', e1)))
     def CHAR(self, item): return str(item)
 
 def parse_expression(regex):
     print("Parsing regex:", regex)
     parser = Lark(grammar, start='start', parser='lalr', transformer=RegexTransformer())
-    return parser.parse(regex)
+    result = parser.parse(regex)
+    print("Parsed tree:", result)
+    return result
 
-# Clase para representar estados únicos
 class State:
     count = 0
     def __init__(self):
         self.id = State.count
         State.count += 1
     def __repr__(self):
-        return f"q{self.id}"
+        return f"S{self.id}"
 
 def build_automata(tree):
     if isinstance(tree, str):
@@ -81,15 +84,15 @@ def build_automata(tree):
     if typ == 'star':
         a = build_automata(tree[1])
         s_start = State()
-        states = [s_start] + a['states']
-        transitions = list(a['transitions'])
-        transitions.append((s_start, a['start'], 'λ'))
+        states = a['states'] + [s_start]
+        transitions = a['transitions'][:]
+        finals = a['finals'] + [s_start]
         for f in a['finals']:
-            transitions.append((f, a['start'], 'λ'))
             transitions.append((f, s_start, 'λ'))
+        transitions.append((s_start, a['start'], 'λ'))
         return {
             'states': states,
             'start': s_start,
-            'finals': [s_start],
+            'finals': finals,
             'transitions': transitions
         }
