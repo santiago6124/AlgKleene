@@ -1,6 +1,7 @@
 # main.py
 from lark import Lark, Transformer
 
+# Gramática para expresiones regulares
 grammar = """
 ?start: expr
 ?expr: expr "+" term   -> union
@@ -15,6 +16,7 @@ CHAR: /[a-z]/
 %ignore " "
 """
 
+# Transformer para construir el árbol sintáctico
 class RegexTransformer(Transformer):
     def union(self, items): return ('union', items[0], items[1])
     def concat(self, items): return ('concat', items[0], items[1])
@@ -24,14 +26,16 @@ class RegexTransformer(Transformer):
 def parse_expression(regex):
     print("Parsing regex:", regex)
     parser = Lark(grammar, start='start', parser='lalr', transformer=RegexTransformer())
-    print(parser.parse(regex))
     return parser.parse(regex)
 
+# Clase para representar estados únicos
 class State:
     count = 0
     def __init__(self):
         self.id = State.count
-        State.count +=1
+        State.count += 1
+    def __repr__(self):
+        return f"q{self.id}"
 
 def build_automata(tree):
     if isinstance(tree, str):
@@ -51,7 +55,6 @@ def build_automata(tree):
         s_start = State()
         states = [s_start] + a1['states'] + a2['states']
         transitions = a1['transitions'] + a2['transitions']
-
         transitions += [(s_start, a1['start'], 'λ'), (s_start, a2['start'], 'λ')]
         finals = a1['finals'] + a2['finals']
         return {
@@ -66,10 +69,8 @@ def build_automata(tree):
         a2 = build_automata(tree[2])
         states = a1['states'] + a2['states']
         transitions = a1['transitions'] + a2['transitions']
-
         for f in a1['finals']:
             transitions.append((f, a2['start'], 'λ'))
-
         return {
             'states': states,
             'start': a1['start'],
@@ -77,31 +78,18 @@ def build_automata(tree):
             'transitions': transitions
         }
 
-
-
     if typ == 'star':
         a = build_automata(tree[1])
-
-        # Si el automata base es solo una transición simple, simplificarlo
-        if len(a['states']) == 2 and len(a['transitions']) == 1:
-            s1, s2, label = a['transitions'][0]
-            # Reemplazamos por un solo estado que se llama a sí mismo
-            s_loop = State()
-            return {
-                'states': [s_loop],
-                'start': s_loop,
-                'finals': [s_loop],
-                'transitions': [(s_loop, s_loop, label)]
-            }
-
-        # Caso general (mantén lo optimizado de antes)
+        s_start = State()
+        states = [s_start] + a['states']
+        transitions = list(a['transitions'])
+        transitions.append((s_start, a['start'], 'λ'))
         for f in a['finals']:
-            a['transitions'].append((f, a['start'], 'λ'))
-        if a['start'] not in a['finals']:
-            a['finals'].append(a['start'])
-        return a
-
-
-
-
-
+            transitions.append((f, a['start'], 'λ'))
+            transitions.append((f, s_start, 'λ'))
+        return {
+            'states': states,
+            'start': s_start,
+            'finals': [s_start],
+            'transitions': transitions
+        }
