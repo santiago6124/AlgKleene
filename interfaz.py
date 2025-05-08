@@ -9,7 +9,7 @@ from main import build_automata, parse_expression
 def visualize(automata):
     dot = graphviz.Digraph()
     for s in automata['states']:
-        dot.node(str(s.id), shape='doublecircle' if s == automata['end'] else 'circle')
+        dot.node(str(s.id), shape='doublecircle' if s in automata['finals'] else 'circle')
     for s1, s2, label in automata['transitions']:
         dot.edge(str(s1.id), str(s2.id), label)
     dot.render('automata_output', format='png')
@@ -20,7 +20,7 @@ def visualize_step_by_step(automata, canvas, status_label, delay):
         dot.node(str(s.id), shape='circle')
     dot.render('automata_step', format='png')
     for s in automata['states']:
-        dot.node(str(s.id), shape='doublecircle' if s == automata['end'] else 'circle')
+        dot.node(str(s.id), shape='doublecircle' if s in automata['finals'] else 'circle')
         dot.render('automata_step', format='png')
         update_canvas(canvas, 'automata_step.png')
         status_label.config(text=f"✔️ Estado {s.id}")
