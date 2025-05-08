@@ -77,23 +77,31 @@ def build_automata(tree):
             'transitions': transitions
         }
 
+
+
     if typ == 'star':
         a = build_automata(tree[1])
-        s_start = State()
-        states = a['states'] + [s_start]
-        transitions = a['transitions'][:]
-        
-        finals = a['finals'] + [s_start]
 
+        # Si el automata base es solo una transición simple, simplificarlo
+        if len(a['states']) == 2 and len(a['transitions']) == 1:
+            s1, s2, label = a['transitions'][0]
+            # Reemplazamos por un solo estado que se llama a sí mismo
+            s_loop = State()
+            return {
+                'states': [s_loop],
+                'start': s_loop,
+                'finals': [s_loop],
+                'transitions': [(s_loop, s_loop, label)]
+            }
+
+        # Caso general (mantén lo optimizado de antes)
         for f in a['finals']:
-            transitions.append((f, a['start'], 'λ'))
-            transitions.append((f, s_start, 'λ'))
+            a['transitions'].append((f, a['start'], 'λ'))
+        if a['start'] not in a['finals']:
+            a['finals'].append(a['start'])
+        return a
 
-        transitions.append((s_start, a['start'], 'λ'))
 
-        return {
-            'states': states,
-            'start': s_start,
-            'finals': finals,
-            'transitions': transitions
-        }
+
+
+
