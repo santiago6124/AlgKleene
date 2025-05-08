@@ -82,7 +82,8 @@ def build_automata(tree):
         s_start = State()
         states = a['states'] + [s_start]
         transitions = a['transitions'][:]
-        finals = [s_start]
+        
+        finals = a['finals'] + [s_start]
 
         for f in a['finals']:
             transitions.append((f, a['start'], 'λ'))
